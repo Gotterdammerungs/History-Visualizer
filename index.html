@@ -11,8 +11,15 @@
 
     <div id="map-container"></div>
 
-    <div id="timeline-hud">
-        <div id="year-display">Synchronizing History Engine...</div>
+    <div id="top-bar">
+        <select id="dataset-select">
+            <option value="milestones">Curated Historical Milestones</option>
+            <option value="decades">Raw Decades (1000 CE - 1930 CE)</option>
+            <option value="centuries">Raw Centuries (2000 BCE - 1000 CE)</option>
+        </select>
+        
+        <div id="year-display">Loading Map...</div>
+        
         <input type="range" id="slider">
     </div>
 
