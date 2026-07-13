@@ -34,7 +34,7 @@ function formatYearLabel(yearVal) {
     }
 }
 
-// Generate colors based on tribe/empire names for contrast
+// Generate unique colors based on tribe/empire names for visual contrast
 function getRegionColor(d) {
     const name = d.properties.NAME || d.properties.subjecto || "Tribal Lands";
     let hash = 0;
@@ -45,17 +45,31 @@ function getRegionColor(d) {
     return `hsla(${h}, 50%, 45%, 0.75)`;
 }
 
-// Loader Engine matching aourednik/historical-basemaps repository formatting rules
+// Map the slider value to the closest valid snapshot available in the github database
+function getClosestAvailableYear(val) {
+    const target = parseInt(val);
+    
+    // Exact list of prehistoric / ancient snapshot files present in the data repository
+    const validYears = [
+        -2000, -1500, -1000, -500, -400, -323, -300, -200, -100, -1,
+        100, 200, 300, 400, 500, 600, 700, 800, 900, 1000
+    ];
+    
+    // Find the closest year in the array
+    return validYears.reduce((prev, curr) => 
+        Math.abs(curr - target) < Math.abs(prev - target) ? curr : prev
+    );
+}
+
+// Main Loader Engine
 function updateHistoricalData(numericYear) {
-    let val = parseInt(numericYear);
+    const actualYear = getClosestAvailableYear(numericYear);
     let fileName = "";
 
-    // Parse values to match the actual server file names
-    if (val < 0) {
-        fileName = `world_bc${Math.abs(val)}.geojson`;
+    if (actualYear < 0) {
+        fileName = `world_bc${Math.abs(actualYear)}.geojson`;
     } else {
-        if (val === 0) val = 1;
-        fileName = `world_${val}.geojson`;
+        fileName = `world_${actualYear}.geojson`;
     }
 
     const url = `https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/${fileName}`;
