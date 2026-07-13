@@ -15,9 +15,8 @@
             width: 100vw;
             height: 100vh;
             overflow: hidden;
-            position: relative;
+            font-family: sans-serif;
         }
-        /* Style for the map container */
         #map-container {
             width: 100%;
             height: 100%;
@@ -26,29 +25,53 @@
         #map-container:active {
             cursor: grabbing;
         }
-        /* Style the landmass countries */
         .country {
             fill: #242936;
             stroke: #171b26;
             stroke-width: 0.5px;
-            transition: fill 0.2s;
         }
-        .country:hover {
-            fill: #2d3546;
+        /* UI Slider HUD styling */
+        #timeline-hud {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(23, 27, 38, 0.85);
+            padding: 15px 25px;
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            border: 1px solid #2d3546;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 10;
+        }
+        #year-display {
+            color: #ffffff;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        #slider {
+            width: 300px;
+            accent-color: #4f46e5;
         }
     </style>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://unpkg.com/topojson@3"></script>
 </head>
 <body>
 
     <div id="map-container"></div>
 
+    <div id="timeline-hud">
+        <div id="year-display">Year: 1800</div>
+        <input type="range" id="slider" min="1000" max="2000" step="100" value="1800">
+    </div>
+
     <script>
         const width = window.innerWidth;
         const height = window.innerHeight;
 
-        // Create the SVG element inside our container
         const svg = d3.select("#map-container")
             .append("svg")
             .attr("width", width)
@@ -56,41 +79,56 @@
 
         const g = svg.append("g");
 
-        // Set up the Map Projection (Natural Earth projection looks great for history maps)
         const projection = d3.geoNaturalEarth1()
             .scale(width / 5.5)
             .translate([width / 2, height / 2]);
 
         const path = d3.geoPath().projection(projection);
 
-        // Add Zoom and Pan functionality
-        const zoom = d3.zoom()
-            .scaleExtent([1, 8]) // Min zoom 1x, Max zoom 8x
-            .on("zoom", (event) => {
-                g.attr("transform", event.transform);
+        // Pan/Zoom
+        svg.call(d3.zoom()
+            .scaleExtent([1, 8])
+            .on("zoom", (event) => g.attr("transform", event.transform))
+        );
+
+        // Core Function: Load map dynamically based on selected year
+        function loadHistoricalMap(year) {
+            // Using a raw open repository of historical geojson data (example increments by centuries)
+            const url = `https://raw.githubusercontent.com/aCrossHistory/data/master/geojson/${year}.geojson`;
+
+            d3.json(url).then(geojson => {
+                // Remove previous map elements
+                g.selectAll("path").remove();
+
+                // Draw historical boundaries
+                g.selectAll("path")
+                    .data(geojson.features)
+                    .enter()
+                    .append("path")
+                    .attr("class", "country")
+                    .attr("d", path)
+                    // You can dynamically fill by empire/country name if the dataset includes it
+                    .style("fill", d => d.properties.color || "#242936");
+            }).catch(error => {
+                console.error(`Could not find map data for the year ${year}:`, error);
             });
+        }
 
-        svg.call(zoom);
+        // Initialize map
+        const slider = document.getElementById("slider");
+        const yearDisplay = document.getElementById("year-display");
+        
+        loadHistoricalMap(slider.value);
 
-        // Load and render high-quality world vector data
-        d3.json("https://unpkg.com/world-atlas@2.0.2/countries-110m.json").then(data => {
-            const countries = topojson.feature(data, data.objects.countries).features;
-
-            g.selectAll("path")
-                .data(countries)
-                .enter()
-                .append("path")
-                .attr("class", "country")
-                .attr("d", path);
-        }).catch(error => {
-            console.error("Error loading the map data: ", error);
+        // Listen for slider adjustments
+        slider.addEventListener("input", (e) => {
+            const year = e.target.value;
+            yearDisplay.textContent = `Year: ${year}`;
+            loadHistoricalMap(year);
         });
 
-        // Handle window resizing dynamically
         window.addEventListener('resize', () => {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            svg.attr("width", w).attr("height", h);
+            svg.attr("width", window.innerWidth).attr("height", window.innerHeight);
         });
     </script>
 
