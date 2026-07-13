@@ -4,59 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>History Visualizer</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            background-color: #0d0f12;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            font-family: sans-serif;
-        }
-        #map-container {
-            width: 100%;
-            height: 100%;
-            cursor: grab;
-        }
-        #map-container:active {
-            cursor: grabbing;
-        }
-        .country {
-            fill: #242936;
-            stroke: #171b26;
-            stroke-width: 0.5px;
-        }
-        /* UI Slider HUD styling */
-        #timeline-hud {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(23, 27, 38, 0.85);
-            padding: 15px 25px;
-            border-radius: 8px;
-            backdrop-filter: blur(5px);
-            border: 1px solid #2d3546;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            z-index: 10;
-        }
-        #year-display {
-            color: #ffffff;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-        #slider {
-            width: 300px;
-            accent-color: #4f46e5;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
@@ -64,73 +12,10 @@
     <div id="map-container"></div>
 
     <div id="timeline-hud">
-        <div id="year-display">Year: 1800</div>
-        <input type="range" id="slider" min="1000" max="2000" step="100" value="1800">
+        <div id="year-display">Year: 500 BCE</div>
+        <input type="range" id="slider" min="-2000" max="1000" step="100" value="-500">
     </div>
 
-    <script>
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-
-        const svg = d3.select("#map-container")
-            .append("svg")
-            .attr("width", width)
-            .attr("height", height);
-
-        const g = svg.append("g");
-
-        const projection = d3.geoNaturalEarth1()
-            .scale(width / 5.5)
-            .translate([width / 2, height / 2]);
-
-        const path = d3.geoPath().projection(projection);
-
-        // Pan/Zoom
-        svg.call(d3.zoom()
-            .scaleExtent([1, 8])
-            .on("zoom", (event) => g.attr("transform", event.transform))
-        );
-
-        // Core Function: Load map dynamically based on selected year
-        function loadHistoricalMap(year) {
-            // Using a raw open repository of historical geojson data (example increments by centuries)
-            const url = `https://raw.githubusercontent.com/aCrossHistory/data/master/geojson/${year}.geojson`;
-
-            d3.json(url).then(geojson => {
-                // Remove previous map elements
-                g.selectAll("path").remove();
-
-                // Draw historical boundaries
-                g.selectAll("path")
-                    .data(geojson.features)
-                    .enter()
-                    .append("path")
-                    .attr("class", "country")
-                    .attr("d", path)
-                    // You can dynamically fill by empire/country name if the dataset includes it
-                    .style("fill", d => d.properties.color || "#242936");
-            }).catch(error => {
-                console.error(`Could not find map data for the year ${year}:`, error);
-            });
-        }
-
-        // Initialize map
-        const slider = document.getElementById("slider");
-        const yearDisplay = document.getElementById("year-display");
-        
-        loadHistoricalMap(slider.value);
-
-        // Listen for slider adjustments
-        slider.addEventListener("input", (e) => {
-            const year = e.target.value;
-            yearDisplay.textContent = `Year: ${year}`;
-            loadHistoricalMap(year);
-        });
-
-        window.addEventListener('resize', () => {
-            svg.attr("width", window.innerWidth).attr("height", window.innerHeight);
-        });
-    </script>
-
+    <script src="script.js"></script>
 </body>
 </html>
