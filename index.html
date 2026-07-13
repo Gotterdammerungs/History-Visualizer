@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History Visualizer - SVG Engine</title>
+    <style>
+        :root {
+            --bg-color: #121214;
+            --panel-color: #1e1e24;
+            --text-color: #e2e8f0;
+            --accent-color: #3b82f6;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--panel-color);
+            padding: 10px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        #main-container {
+            flex: 1;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* The SVG Canvas wrapper */
+        #map-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: radial-gradient(circle, #1a1a2e 0%, #0f0f1b 100%);
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            max-width: 1000px;
+            max-height: 600px;
+            filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.7));
+        }
+
+        /* Default SVG styling */
+        .land-mass {
+            fill: #2a2a35;
+            stroke: #444;
+            stroke-width: 1;
+            transition: all 0.5s ease;
+        }
+
+        /* Sidebar for data display */
+        #sidebar {
+            width: 300px;
+            background-color: var(--panel-color);
+            border-left: 1px solid #333;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+        }
+
+        .data-card {
+            background: #2d2d37;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        /* Timeline controls */
+        #timeline-container {
+            background-color: var(--panel-color);
+            padding: 20px;
+            border-top: 1px solid #333;
+            z-index: 10;
+        }
+
+        .slider-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent-color);
+            cursor: pointer;
+        }
+
+        #year-display {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            min-width: 140px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h2>Chronos Visualizer</h2>
+        <div id="global-status">Era: Ancient World</div>
+    </header>
+
+    <div id="main-container">
+        <div id="map-wrapper">
+            <!-- 
+              YOUR VECTOR MAP: Replace/add your custom SVG paths here.
+              We use viewBox to ensure infinite scalability.
+            -->
+            <svg viewBox="0 0 1000 600" id="history-svg">
+                <!-- Static background map grid/ocean if you want -->
+                <rect width="1000" height="600" fill="none"/>
+                
+                <!-- Example regional vector paths with unique IDs -->
+                <path id="region-west" class="land-mass" d="M 100 100 Q 250 50 400 150 T 300 450 T 100 300 Z" />
+                <path id="region-east" class="land-mass" d="M 500 200 Q 700 100 900 250 T 800 500 T 450 400 Z" />
+                <path id="region-south" class="land-mass" d="M 200 450 Q 500 350 700 520 T 400 580 T 150 520 Z" />
+            </svg>
+        </div>
+
+        <div id="sidebar">
+            <h3>Region Details</h3>
+            <div id="region-info">
+                <p>Click a region or move the slider to inspect historical data updates.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="timeline-container">
+        <div class="slider-wrapper">
+            <span id="year-display">-500 BCE</span>
+            <input type="range" id="time-slider" min="-500" max="1500" value="-500" step="500">
+        </div>
+    </div>
+
+    <script>
+        // --- INFINITELY FLEXIBLE DATA STRUCTURE ---
+        // You can attach literally any custom keys, nested arrays, or stats here.
+        const historicalTimeline = {
+            "-500": {
+                eraName: "Antiquity",
+                regions: {
+                    "region-west": { name: "Celtic Tribes", color: "#3b7a57", leader: "Tribal Council", religion: "Druidism", pop: "400k" },
+                    "region-east": { name: "Achaemenid Empire", color: "#8a3324", leader: "Darius I", religion: "Zoroastrianism", pop: "15M" },
+                    "region-south": { name: "Ancient Carthage", color: "#c19a6b", leader: "Suffetes", religion: "Polytheism", pop: "1M" }
+                }
+            },
+            "0": {
+                eraName: "Classical Era",
+                regions: {
+                    "region-west": { name: "Roman Republic", color: "#990000", leader: "Julius Caesar", religion: "Roman Polytheism", pop: "45M" },
+                    "region-east": { name: "Parthian Empire", color: "#4a2c6d", leader: "Phraates IV", religion: "Zoroastrianism", pop: "8M" },
+                    "region-south": { name: "Roman Africa", color: "#990000", leader: "Proconsul", religion: "Roman Polytheism", pop: "3M" }
+                }
+            },
+            "500": {
+                eraName: "Early Middle Ages",
+                regions: {
+                    "region-west": { name: "Frankish Kingdom", color: "#2243b6", leader: "Clovis I", religion: "Catholicism", pop: "4M" },
+                    "region-east": { name: "Sasanian Empire", color: "#d4af37", leader: "Khosrow I", religion: "Zoroastrianism", pop: "12M" },
+                    "region-south": { name: "Vandal Kingdom", color: "#708090", leader: "Gelimer", religion: "Arianism", pop: "1.5M" }
+                }
+            },
+            "1000": {
+                eraName: "High Middle Ages",
+                regions: {
+                    "region-west": { name: "Kingdom of France", color: "#0f52ba", leader: "Robert II", religion: "Catholicism", pop: "6M" },
+                    "region-east": { name: "Byzantine Empire", color: "#800020", leader: "Basil II", religion: "Eastern Orthodox", pop: "12M" },
+                    "region-south": { name: "Fatimid Caliphate", color: "#006400", leader: "Al-Hakim", religion: "Shia Islam", pop: "7M" }
+                }
+            },
+            "1500": {
+                eraName: "Early Modern Era",
+                regions: {
+                    "region-west": { name: "Kingdom of France", color: "#0f52ba", leader: "Louis XII", religion: "Catholicism", pop: "15M" },
+                    "region-east": { name: "Ottoman Empire", color: "#c21807", leader: "Bayezid II", religion: "Sunni Islam", pop: "22M" },
+                    "region-south": { name: "Ottoman Eyalets", color: "#e34234", leader: "Pasha", religion: "Sunni Islam", pop: "4M" }
+                }
+            }
+        };
+
+        const slider = document.getElementById('time-slider');
+        const yearDisplay = document.getElementById('year-display');
+        const eraDisplay = document.getElementById('global-status');
+        const sidebarInfo = document.getElementById('region-info');
+        
+        let currentYearData = historicalTimeline[slider.value];
+
+        function updateTimeline(year) {
+            currentYearData = historicalTimeline[year];
+            
+            // Update labels
+            yearDisplay.innerText = year < 0 ? `${Math.abs(year)} BCE` : `${year} CE`;
+            eraDisplay.innerText = `Era: ${currentYearData.eraName}`;
+
+            // Loop through map paths and update their properties visually
+            Object.keys(currentYearData.regions).forEach(regionId => {
+                const element = document.getElementById(regionId);
+                if (element) {
+                    const regionData = currentYearData.regions[regionId];
+                    element.style.fill = regionData.color;
+                }
+            });
+
+            // Clear sidebar hook unless a region is selected
+            sidebarInfo.innerHTML = `<p>Click a region to see its custom data for the year ${yearDisplay.innerText}.</p>`;
+        }
+
+        // Click handler to render any nested properties dynamically into the panel
+        document.querySelectorAll('.land-mass').forEach(path => {
+            path.addEventListener('click', (e) => {
+                const regionId = e.target.id;
+                const data = currentYearData.regions[regionId];
+
+                if (data) {
+                    sidebarInfo.innerHTML = `
+                        <div class="data-card">
+                            <h4>${data.name}</h4>
+                            <p><strong>Ruler:</strong> ${data.leader}</p>
+                            <p><strong>Religion:</strong> ${data.religion}</p>
+                            <p><strong>Est. Population:</strong> ${data.pop}</p>
+                        </div>
+                    `;
+                }
+            });
+        });
+
+        slider.addEventListener('input', (e) => updateTimeline(e.target.value));
+        
+        // Initial build
+        updateTimeline(slider.value);
+    </script>
+</body>
+</html>
